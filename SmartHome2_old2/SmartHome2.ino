@@ -104,11 +104,11 @@ void setup() {
     //****************************************************************************************************
     // Tạo Task với FreeRTOS
     xTaskCreatePinnedToCore(Data_Handle, "Data_Handle",                   4096, NULL, 5, &Task1Handle, 0);
-    xTaskCreatePinnedToCore(Buzzer_Fan_Handle, "Buzzer_Fan_Handle",       4096, NULL, 1, &Task2Handle, 1);
-    xTaskCreatePinnedToCore(App_Handle, "App_Handle",                     8192, NULL, 4, &Task3Handle, 1);
-    xTaskCreatePinnedToCore(Send_Data_App, "Send_Data_App",               8192, NULL, 3, &Task4Handle, 0);
+    xTaskCreatePinnedToCore(Buzzer_Fan_Handle, "Buzzer_Fan_Handle",       1024, NULL, 1, &Task2Handle, 1);
+    xTaskCreatePinnedToCore(App_Handle, "App_Handle",                     4096, NULL, 4, &Task3Handle, 1);
+    xTaskCreatePinnedToCore(Send_Data_App, "Send_Data_App",               4096, NULL, 3, &Task4Handle, 0);
     xTaskCreatePinnedToCore(LiquidCrystalDisplay, "LiquidCrystalDisplay", 4096, NULL, 2, &Task5Handle, 1);
-    //xTaskCreatePinnedToCore(Finger_Handle, "Finger_Handle",               2048, NULL, 2, &Task6Handle, 1);
+    xTaskCreatePinnedToCore(Finger_Handle, "Finger_Handle",               2048, NULL, 2, &Task6Handle, 1);
 }
 
 // Task đọc dữ liệu từ cảm biến
@@ -182,14 +182,14 @@ void Send_Data_App(void *pvParameters) {
         } else {
             Serial.println("WiFi Disconnected! Skipping data send...");
         }
-        vTaskDelay(500 / portTICK_PERIOD_MS);  // Giảm tần suất gửi
+        vTaskDelay(1000 / portTICK_PERIOD_MS);  // Giảm tần suất gửi
     }
 }
 // Task 2: Xử lý lệnh từ App
 void App_Handle(void *pvParameters) {
     while (1) {
         ERa.run();
-        vTaskDelay(50 / portTICK_PERIOD_MS);
+        vTaskDelay(100 / portTICK_PERIOD_MS);
     }
 }
 
@@ -233,68 +233,51 @@ void LiquidCrystalDisplay(void *pvParameters) {
       vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
 }
-// void Finger_Handle(void *pvParameters) {
-//     while (1) {
-//         static int lastState = LOW;
-//         int state = digitalRead(BUTTON_PIN);
+void Finger_Handle(void *pvParameters) {
+    while (1) {
+        static int lastState = LOW;
+        int state = digitalRead(BUTTON_PIN);
 
-//     if (state == HIGH && lastState == LOW) {
-//         for (int posDegrees = 0; posDegrees <= 90; posDegrees++) {
-//             servo1.write(posDegrees);
-//             delay(20);
-//         }
-//         delay(2500);
-//         for (int posDegrees = 90; posDegrees >= 0; posDegrees--) {
-//             servo1.write(posDegrees);
-//             delay(20);
-//         }
-//     }
-//       lastState = state;
-//       vTaskDelay(500 / portTICK_PERIOD_MS);
-//     }
-// }
-
+    if (state == HIGH && lastState == LOW) {
+        for (int posDegrees = 0; posDegrees <= 90; posDegrees++) {
+            servo1.write(posDegrees);
+            delay(20);
+        }
+        delay(2500);
+        for (int posDegrees = 90; posDegrees >= 0; posDegrees--) {
+            servo1.write(posDegrees);
+            delay(20);
+        }
+    }
+      lastState = state;
+      vTaskDelay(500 / portTICK_PERIOD_MS);
+    }
+}
 void loop() {
     // Không dùng loop() khi sử dụng FreeRTOS
 }
-
 ERA_WRITE(V13) {
     int led1 = param.getInt();
     digitalWrite(LED1, led1 ? HIGH : LOW); // Đảm bảo đúng mức logic
     ERa.virtualWrite(V13, led1); // Đồng bộ trạng thái về app
 }
-
 ERA_WRITE(V16) {
     int led2 = param.getInt();
     digitalWrite(LED2, led2 ? HIGH : LOW); // Đảm bảo đúng mức logic
     ERa.virtualWrite(V16, led2); // Đồng bộ trạng thái về app
 }
-
 ERA_WRITE(V17) {
     int led3 = param.getInt();
     digitalWrite(LED3, led3 ? HIGH : LOW); // Đảm bảo đúng mức logic
     ERa.virtualWrite(V17, led3); // Đồng bộ trạng thái về app
 }
-
 ERA_WRITE(V12) {
     int fan = param.getInt();
     digitalWrite(FAN_PIN, fan ? HIGH : LOW); // Đảm bảo đúng mức logic
     ERa.virtualWrite(V12, fan); // Đồng bộ trạng thái về app
 }
-
-ERA_WRITE(V14) {
-    int led1 = param.getInt();
-    if(led1){
-    for (int posDegrees = 0; posDegrees <= 90; posDegrees++) {
-            servo1.write(posDegrees);
-            delay(20);
-      }
-    }
-    else{
-    for (int posDegrees = 90; posDegrees >= 0; posDegrees--) {
-            servo1.write(posDegrees);
-            delay(20);
-        }
-    }
-    ERa.virtualWrite(V14, led1); // Đồng bộ trạng thái về app
-}
+// ERA_WRITE(V14) {
+//     int led1 = param.getInt();
+//     digitalWrite(LED1, led1 ? HIGH : LOW); // Đảm bảo đúng mức logic
+//     ERa.virtualWrite(V14, led1); // Đồng bộ trạng thái về app
+// }
